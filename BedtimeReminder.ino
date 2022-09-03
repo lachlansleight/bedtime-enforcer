@@ -70,9 +70,19 @@ void loop()
     //displayDebug(ButtonR.is, ButtonX.is, encoderPos, scale.massG, rtc.getString(true));
     //return;
     
+    //There's a two hour window after the alarm trigger time during which the alarm
+    //will sound if the weight isn't within tolerance of the target weight.
+    //Note that this wraps around 00:00 if necessary.
+    int currentFullMinute = rtc.hour * 60 + rtc.minute;
+    int minMinute = alarmHour * 60 + alarmMinute;
+    int endMinute = (minMinute + alarmPeriod) % 1440;
+    bool within = endMinute > minMinute 
+        ? (minMinute <= currentFullMinute && currentFullMinute <= endMinute)
+        : (minMinute <= currentFullMinute || currentFullMinute <= endMinute);
     if(!isBuzzing) {
         buzzer.off();
-        if(rtc.hour == alarmHour && rtc.minute == alarmMinute && abs(scale.massG - weight) > weightTolerance) {
+        
+        if(within && abs(scale.massG - weight) > weightTolerance) {
             isBuzzing = true;
             uiMode = MODE_BUZZ;
         }

@@ -11,6 +11,7 @@ int alarmHour = 23;
 int alarmMinute = 45;
 
 int buzzerFreq = 2532;
+int alarmPeriod = 120;
 
 void initializeConfig()
 {
@@ -34,6 +35,7 @@ void initializeConfig()
     alarmHour = preferences.getInt("alarmHour", 23);
     alarmMinute = preferences.getInt("alarmMinute", 45);
     buzzerFreq = preferences.getInt("buzzerFreq", 2532);
+    alarmPeriod = preferences.getInt("alarmPeriod", 120);
     
     preferences.end();
 }
@@ -49,6 +51,7 @@ void saveConfig()
     preferences.putInt("alarmHour", alarmHour);
     preferences.putInt("alarmMinute", alarmMinute);
     preferences.putInt("buzzerFreq", buzzerFreq);
+    preferences.putInt("alarmPeriod", alarmPeriod);
     
     preferences.end();
 }

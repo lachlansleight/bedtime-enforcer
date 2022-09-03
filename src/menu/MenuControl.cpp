@@ -40,25 +40,22 @@ void runMenu() {
     if(ButtonR.down) {
         if(mainMenuSelection == SET_CALIBRATION) {
             runAutoCalibrate(195.0); //this is just how much my smartphone happens to weigh right now
-            return;
-        } else if(mainMenuSelection == SET_WEIGHT || mainMenuSelection == SET_TOLERANCE) {
-            uiMode = MODE_SET;
-            return;
         } else if(mainMenuSelection == SET_TIME) {
             uiMode = MODE_TIME;
             newTimeHour = (int)rtc.hour;
             newTimeMinute = (int)rtc.minute;
             timeSetting = false;
             timePosition = 0;
-            return;
         } else if(mainMenuSelection == SET_ALARM) {
             uiMode = MODE_TIME;
             newTimeHour = alarmHour;
             newTimeMinute = alarmMinute;
             timeSetting = false;
             timePosition = 0;
-            return;
+        } else {
+            uiMode = MODE_SET;
         }
+        return;
     }
 
     if(ButtonX.down) {
