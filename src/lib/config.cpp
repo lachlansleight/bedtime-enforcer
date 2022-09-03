@@ -4,12 +4,18 @@ Preferences preferences;
 
 bool configSet = false;
 long calibrationFactor = -36052;
+float weight = 195.0;
+float weightTolerance = 20.0;
+
+int alarmHour = 23;
+int alarmMinute = 45;
+
+int buzzerFreq = 2532;
 
 void initializeConfig()
 {
     //sensible defaults
     calibrationFactor = -36052;
-
     
     preferences.begin("bedtime", false); 
 
@@ -23,6 +29,11 @@ void initializeConfig()
 
     //Get everything else from the EEPROM
     calibrationFactor = preferences.getLong("calFactor", -36052);
+    weight = preferences.getFloat("weight", 195);
+    weightTolerance = preferences.getFloat("weightTolerance", 20);
+    alarmHour = preferences.getInt("alarmHour", 23);
+    alarmMinute = preferences.getInt("alarmMinute", 45);
+    buzzerFreq = preferences.getInt("buzzerFreq", 2532);
     
     preferences.end();
 }
@@ -33,6 +44,11 @@ void saveConfig()
     configSet = true;
     preferences.putBool("configSet", configSet);
     preferences.putLong("calFactor", calibrationFactor);
+    preferences.putFloat("weight", weight);
+    preferences.putFloat("weightTolerance", weightTolerance);
+    preferences.putInt("alarmHour", alarmHour);
+    preferences.putInt("alarmMinute", alarmMinute);
+    preferences.putInt("buzzerFreq", buzzerFreq);
     
     preferences.end();
 }

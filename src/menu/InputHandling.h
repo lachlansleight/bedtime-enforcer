@@ -5,9 +5,9 @@
 #include <ButtonDebounce.h>
 #include <RotaryEncoder.h>
 
+#include "../lib/consts.h"
 #include "../lib/Button.h"
 #include "../lib/TimeHandling.h"
-#include "../lib/consts.h"
 
 #define DEBOUNCE_TIME 50
 

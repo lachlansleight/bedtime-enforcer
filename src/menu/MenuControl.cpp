@@ -2,12 +2,201 @@
 
 int uiMode = 0;
 int mainMenuSelection = 0;
+int autoExtractionPhase = 0;
+int newTimeHour = 0;
+int newTimeMinute = 0;
+int timePosition = 0;
+bool timeSetting = false;
 
 void runUi() {
-    
+    if(uiMode == MODE_HOME) runHome();
+    else if(uiMode == MODE_MENU) runMenu();
+    else if(uiMode == MODE_SET) runSet();
+    else if(uiMode == MODE_TIME) runSetTime();
+    else if(uiMode == MODE_BUZZ) runBuzz();
 }
 
-void runAutoCalibrate() {
+void runHome() {
+    if(ButtonR.down) {
+        uiMode = MODE_MENU;
+        mainMenuSelection = 0;
+        return;
+    }
+
+    if(ButtonX.down) {
+        showTare();
+        scale.tare();
+        delay(1000);
+    }
+
+    showHomeScreen(rtc.getString(false, rtc.second % 2 == 0), scale.massG);
+}
+
+void runMenu() {
+    //navigate the menu
+    if(encoder > 0 && mainMenuSelection < SET_CALIBRATION) mainMenuSelection++;
+    else if(encoder < 0 && mainMenuSelection > SET_TIME) mainMenuSelection--;
+
+    if(ButtonR.down) {
+        if(mainMenuSelection == SET_CALIBRATION) {
+            runAutoCalibrate(195.0); //this is just how much my smartphone happens to weigh right now
+            return;
+        } else if(mainMenuSelection == SET_WEIGHT || mainMenuSelection == SET_TOLERANCE) {
+            uiMode = MODE_SET;
+            return;
+        } else if(mainMenuSelection == SET_TIME) {
+            uiMode = MODE_TIME;
+            newTimeHour = (int)rtc.hour;
+            newTimeMinute = (int)rtc.minute;
+            timeSetting = false;
+            timePosition = 0;
+            return;
+        } else if(mainMenuSelection == SET_ALARM) {
+            uiMode = MODE_TIME;
+            newTimeHour = alarmHour;
+            newTimeMinute = alarmMinute;
+            timeSetting = false;
+            timePosition = 0;
+            return;
+        }
+    }
+
+    if(ButtonX.down) {
+        uiMode = MODE_HOME;
+        return;
+    }
+
+    showMainMenu(mainMenuSelection);
+}
+
+void runSet() {
+    String heading = "";
+    if(mainMenuSelection == SET_WEIGHT) {
+        weight += float(encoder) * 5;
+        if(weight <= 0) weight = 0;
+        if(weight >= 500) weight = 500;
+        heading = "Set Weight";
+        showSetMenu(heading, String(weight, 1) + "g");
+    } else if(mainMenuSelection == SET_TOLERANCE) {
+        heading = "Set Tolerance";
+        weightTolerance += float(encoder) * 1;
+        if(weightTolerance <= 0) weightTolerance = 0;
+        if(weightTolerance >= 50) weightTolerance = 50;
+        showSetMenu(heading, String(weightTolerance, 1) + "g");
+    }
+
+    if(ButtonX.down) {
+        showSetMenu(heading, "Cancel");
+        delay(500);
+        uiMode = MODE_MENU;
+        return;
+    }
+
+    if(ButtonR.down) {
+        showSetMenu(heading, "Save");
+        saveConfig();
+        delay(500);
+        uiMode = MODE_MENU;
+        return;
+    }
+}
+
+void runBuzz() {
+    showBuzz();
+}
+
+void runSetTime() {
+    String heading = "";
+    if(mainMenuSelection == SET_TIME) {
+        heading = "Set Time";
+    } else if(mainMenuSelection == SET_ALARM) {
+        heading = "Set Alarm";
+    }
+    //in the home position, either X or R returns to the main menu
+    if(timePosition == 0) {
+        if(ButtonX.down || ButtonR.down) {
+            uiMode = MODE_MENU;
+            return;
+        }
+    } 
+    
+    //if we're not setting, navigate between the things we can set,
+    //and enter one if the position isn't zero
+    if(!timeSetting) {
+        if(encoder > 0 && timePosition < 3) timePosition++;
+        else if(encoder < 0 && timePosition > 0) timePosition--;
+
+        if(ButtonR.down) {
+            timeSetting = true;
+        }
+        if(ButtonX.down) {
+            uiMode = MODE_MENU;
+            return;
+        }
+
+        showTimeMenu(heading, getTimeString(newTimeHour, newTimeMinute, 0, false, true), timePosition, timeSetting);
+    } else {
+        //set hour or minute depending on position
+        if(timePosition == 1) {
+            if(encoder != 0) {
+                newTimeHour += encoder;
+                if(newTimeHour < 0) newTimeHour = 23;
+                if(newTimeHour > 23) newTimeHour = 0;
+            }
+            showTimeMenu(heading, getTimeString(newTimeHour, newTimeMinute, 0, false, true), timePosition, timeSetting);
+        } else if(timePosition == 2) {
+            if(encoder != 0) {
+                newTimeMinute += encoder * (mainMenuSelection == SET_TIME ? 1 : 5);
+                if(newTimeMinute < 0) newTimeMinute = 55;
+                if(newTimeMinute > 55) newTimeMinute = 0;
+            }
+            showTimeMenu(heading, getTimeString(newTimeHour, newTimeMinute, 0, false, true), timePosition, timeSetting);
+        } else if(timePosition == 3) {
+            if(encoder != 0) {
+                newTimeHour = (newTimeHour + 12) % 24;
+            }
+            showTimeMenu(heading, getTimeString(newTimeHour, newTimeMinute, 0, false, true), timePosition, timeSetting);
+        }
+
+        //save or cancel on button push
+        if(ButtonR.down) {
+            showTimeMenu(heading, "  Save  ", 0, false);
+
+            //If setting the time, we actually set the RTC chip's time
+            //Otherwise it's just a config save
+            if(mainMenuSelection == SET_TIME) {
+                rtc.set((uint8_t)newTimeHour, (uint8_t)newTimeMinute);
+            } else if(mainMenuSelection == SET_ALARM) {
+                alarmHour = newTimeHour;
+                alarmMinute = newTimeMinute;
+                saveConfig();
+            }
+            delay(500);
+            timeSetting = false;
+            timePosition = 0;
+            showTimeMenu(heading, getTimeString(newTimeHour, newTimeMinute, 0, false, true), timePosition, timeSetting);
+        }
+        if(ButtonX.down) {
+            showTimeMenu(heading, " Cancel ", 0, false);
+
+            //Apply the values that we started with - either from the RTC or from the config
+            if(mainMenuSelection == SET_TIME) {
+                newTimeHour = (int)rtc.hour;
+                newTimeMinute = (int)rtc.minute;
+            } else if(mainMenuSelection == SET_ALARM) {
+                newTimeHour = alarmHour;
+                newTimeMinute = alarmMinute;
+                saveConfig();
+            }
+            delay(500);
+            timeSetting = false;
+            timePosition = 0;
+            showTimeMenu(heading, getTimeString(newTimeHour, newTimeMinute, 0, false, true), timePosition, timeSetting);
+        }
+    }
+}
+
+void runAutoCalibrate(float calibrationWeight) {
     display.clearDisplay();
     drawText("Calibrate:", 2, 0, 0);
     display.display();
@@ -15,7 +204,6 @@ void runAutoCalibrate() {
     long startCalibrationFactor = calibrationFactor;
 
     //Set everything up for auto-calibration
-    float calibrationWeight = 20;
     calibrationFactor = 100;
     scale.scale.set_scale(calibrationFactor);
     scale.updateMass(3);
@@ -47,7 +235,7 @@ void runAutoCalibrate() {
         timeTick();
         loopInputs();
 
-        //cancel if they hold the X button down
+        //cancel if they hold the A button down
         if(ButtonX.is) {
             attempts = 100;
             break;

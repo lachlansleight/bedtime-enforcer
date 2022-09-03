@@ -9,6 +9,14 @@ extern Preferences preferences;
 extern bool configSet;
 extern long calibrationFactor;
 
+extern float weight;
+extern float weightTolerance;
+
+extern int alarmHour;
+extern int alarmMinute;
+
+extern int buzzerFreq;
+
 void initializeConfig();
 void saveConfig();
 

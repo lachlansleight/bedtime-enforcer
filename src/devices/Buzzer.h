@@ -12,6 +12,7 @@ class Buzzer {
         int frequency;
         bool is;
         void on();
+        void on(int freq);
         void off();
 };
 

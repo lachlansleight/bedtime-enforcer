@@ -19,12 +19,21 @@ void Buzzer::initialize(int p, int freq)
 
 void Buzzer::on()
 {
+    if(is) return;
     ledcWriteTone(1, frequency);
+    is = true;
+}
+
+void Buzzer::on(int freq)
+{
+    if(is) return;
+    ledcWriteTone(1, freq);
     is = true;
 }
 
 void Buzzer::off()
 {
+    if(!is) return;
     ledcWrite(1, 0);
     is = false;
 }
